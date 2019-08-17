@@ -14,7 +14,6 @@ import merge from 'merge';
 import SectionHeader from './SectionHeader';
 import SectionList from './SectionList';
 import CellWrapper from './CellWrapper';
-
 const { UIManager } = NativeModules;
 
 export default class SelectableSectionsListView extends Component {
@@ -125,11 +124,11 @@ export default class SelectableSectionsListView extends Component {
       const maxY = this.totalHeight - this.containerHeight + headerHeight;
       y = y > maxY ? maxY : y;
 
-      this.refs.listview.scrollTo({ x:0, y, animated: true });
+      this.refs.listview.scrollTo({ x:0, y, animated: false });
     } else {
       UIManager.measureLayout(this.cellTagMap[section], ReactNative.findNodeHandle(this.refs.listview), () => {}, (x, y, w, h) => {
         y = y - this.props.sectionHeaderHeight;
-        this.refs.listview.scrollTo({ x:0, y, animated: true });
+        this.refs.listview.scrollTo({ x:0, y, animated: false });
       });
     }
 
@@ -210,7 +209,7 @@ export default class SelectableSectionsListView extends Component {
   }
 
   render() {
-    const { data } = this.props;
+    const { data } = this.props;    
     const dataIsArray = Array.isArray(data);
     let sectionList;
     let renderSectionHeader;
@@ -220,7 +219,7 @@ export default class SelectableSectionsListView extends Component {
     if (typeof(this.props.compareFunction) === "function") {
       sections = sections.sort(this.props.compareFunction);
     }
-
+    console.log('data is array', dataIsArray, sections.length);
     if (dataIsArray) {
       dataSource = this.state.dataSource.cloneWithRows(data);
     } else {
@@ -259,12 +258,14 @@ export default class SelectableSectionsListView extends Component {
     });
 
     props.style = void 0;
-
+    // alert(JSON.stringify(dataSource));
     return (
       <View ref="view" style={[styles.container, this.props.style]}>
         <ListView
           ref="listview"
-          {...props}
+          {...props}  
+          pageSize={200}        
+          showsVerticalScrollIndicator={false}
         />
         {sectionList}
       </View>
