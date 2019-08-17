@@ -3,10 +3,10 @@
 import React, { Component } from 'react';
 import PropTypes from 'prop-types';
 import ReactNative, {
-    StyleSheet,
-    View,
-    Text,
-    NativeModules,
+  StyleSheet,
+  View,
+  Text,
+  NativeModules,
 } from 'react-native';
 
 const { UIManager } = NativeModules;
@@ -16,213 +16,213 @@ const returnTrue = () => true;
 
 export default class SectionList extends Component {
 
-    constructor(props, context) {
-        super(props, context);
+  constructor(props, context) {
+    super(props, context);
 
-        this.onSectionSelect = this.onSectionSelect.bind(this);
-        this.resetSection = this.resetSection.bind(this);
-        this.detectAndScrollToSection = this.detectAndScrollToSection.bind(this);
-        this.lastSelectedIndex = null;
+    this.onSectionSelect = this.onSectionSelect.bind(this);
+    this.resetSection = this.resetSection.bind(this);
+    this.detectAndScrollToSection = this.detectAndScrollToSection.bind(this);
+    this.lastSelectedIndex = null;
+  }
+
+  onSectionSelect(sectionId, fromTouch) {
+    this.props.onSectionSelect && this.props.onSectionSelect(sectionId);
+
+    if (!fromTouch) {
+      this.lastSelectedIndex = null;
+    }
+  }
+
+  resetSection() {
+    this.lastSelectedIndex = null;
+  }
+
+  detectAndScrollToSection(e) {
+    const ev = e.nativeEvent.touches[0];
+    //var rect = {width:1, height:1, x: ev.locationX, y: ev.locationY};
+    //var rect = [ev.locationX, ev.locationY];
+
+    //UIManager.measureViewsInRect(rect, e.target, noop, (frames) => {
+    //  if (frames.length) {
+    //    var index = frames[0].index;
+    //    if (this.lastSelectedIndex !== index) {
+    //      this.lastSelectedIndex = index;
+    //      this.onSectionSelect(this.props.sections[index], true);
+    //    }
+    //  }
+    //});
+    //UIManager.findSubviewIn(e.target, rect, viewTag => {
+    //this.onSectionSelect(view, true);
+    //})
+    const targetY = ev.pageY;
+    const { y, width, height } = this.measure;
+    const index = (Math.floor(ev.locationY / height));
+    console.log("detectAndScrollToSection", ev, index, height, this.props.sections.length);
+    if (index >= this.props.sections.length || index < 0) {
+      return;
     }
 
-    onSectionSelect(sectionId, fromTouch) {
-        this.props.onSectionSelect && this.props.onSectionSelect(sectionId);
-
-        if (!fromTouch) {
-            this.lastSelectedIndex = null;
-        }
+    if (this.lastSelectedIndex !== index && this.props.data[this.props.sections[index]].length) {
+      this.lastSelectedIndex = index;
+      this.onSectionSelect(this.props.sections[index], true);
     }
+  }
 
-    resetSection() {
-        this.lastSelectedIndex = null;
+  fixSectionItemMeasure() {
+    const sectionItem = this.refs.sectionItem0;
+    // console.log("fixSectionItemMeasure", sectionItem)
+    if (!sectionItem) {
+      return;
     }
+    this.measureTimer = setTimeout(() => {
+      sectionItem.measure((x, y, width, height, pageX, pageY) => {
+        console.log('fixSectionItemMeasure', [x, y, width, height, pageX, pageY]);
+        this.measure = {
+          y: pageY,
+          width,
+          height
+        };
+      })
+    }, 0);
+  }
 
-    detectAndScrollToSection(e) {
-        const ev = e.nativeEvent.touches[0];
-        //var rect = {width:1, height:1, x: ev.locationX, y: ev.locationY};
-        //var rect = [ev.locationX, ev.locationY];
+  componentDidMount() {
+    this.fixSectionItemMeasure();
+  }
+  componentDidUpdate() {
+    this.fixSectionItemMeasure();
+  }
+  // fix bug when change data
+  componentDidUpdate() {
+    this.fixSectionItemMeasure();
+  }
 
-        //UIManager.measureViewsInRect(rect, e.target, noop, (frames) => {
-        // if (frames.length) {
-        // var index = frames[0].index;
-        // if (this.lastSelectedIndex !== index) {
-        // this.lastSelectedIndex = index;
-        // this.onSectionSelect(this.props.sections[index], true);
-        // }
-        // }
-        //});
-        //UIManager.findSubviewIn(e.target, rect, viewTag => {
-        //this.onSectionSelect(view, true);
-        //})
-        const targetY = ev.pageY;
-        const { y, width, height } = this.measure;
-        const index = (Math.floor(ev.locationY / height));
-        console.log("detectAndScrollToSection", ev, index, height, this.props.sections.length);
-        if (index >= this.props.sections.length || index < 0) {
-            return;
-        }
+  componentWillUnmount() {
+    this.measureTimer && clearTimeout(this.measureTimer);
+  }
 
-        if (this.lastSelectedIndex !== index && this.props.data[this.props.sections[index]].length) {
-            this.lastSelectedIndex = index;
-            this.onSectionSelect(this.props.sections[index], true);
-        }
-    }
+  render() {
+    const SectionComponent = this.props.component;
+    const sections = this.props.sections.map((section, index) => {
+      const title = this.props.getSectionListTitle ?
+        this.props.getSectionListTitle(section) :
+        section;
 
-    fixSectionItemMeasure() {
-        const sectionItem = this.refs.sectionItem0;
-        // console.log("fixSectionItemMeasure", sectionItem)
-        if (!sectionItem) {
-            return;
-        }
-        this.measureTimer = setTimeout(() => {
-            sectionItem.measure((x, y, width, height, pageX, pageY) => {
-                console.log('fixSectionItemMeasure', [x, y, width, height, pageX, pageY]);
-                this.measure = {
-                    y: pageY,
-                    width,
-                    height
-                };
-            })
-        }, 0);
-    }
+      const textStyle = this.props.data[section].length ?
+        styles.text :
+        styles.inactivetext;
 
-    componentDidMount() {
-        this.fixSectionItemMeasure();
-    }
-    componentDidUpdate() {
-        this.fixSectionItemMeasure();
-    }
-    // fix bug when change data
-    componentDidUpdate() {
-        this.fixSectionItemMeasure();
-    }
+      const child = SectionComponent ?
+        <SectionComponent
+          sectionId={section}
+          title={title}
+        /> :
+        <View
+          style={styles.item}>
+          <Text style={[textStyle, this.props.fontStyle]}>{title}</Text>
+        </View>;
 
-    componentWillUnmount() {
-        this.measureTimer && clearTimeout(this.measureTimer);
-    }
+      //if(index){
+      return (
+        <View key={index} ref={'sectionItem' + index} pointerEvents="none">
+          {child}
+        </View>
+      );
+      //}
+      //else{
+      //  return (
+      //    <View key={index} ref={'sectionItem' + index} pointerEvents="none"
+      //          onLayout={e => {console.log(e.nativeEvent.layout)}}>
+      //      {child}
+      //    </View>
+      //  );
+      //
+      //}
+    });
 
-    render() {
-        const SectionComponent = this.props.component;
-        const sections = this.props.sections.map((section, index) => {
-            const title = this.props.getSectionListTitle ?
-                this.props.getSectionListTitle(section) :
-                section;
-
-            const textStyle = this.props.data[section].length ?
-                styles.text :
-                styles.inactivetext;
-
-            const child = SectionComponent ?
-                <SectionComponent
-                    sectionId={section}
-                    title={title}
-                /> :
-                <View
-                    style={styles.item}>
-                    <Text style={[textStyle, this.props.fontStyle]}>{title}</Text>
-                </View>;
-
-            //if(index){
-            return (
-                <View key={index} ref={'sectionItem' + index} pointerEvents="none">
-                    {child}
-                </View>
-            );
-            //}
-            //else{
-            // return (
-            // <View key={index} ref={'sectionItem' + index} pointerEvents="none"
-            // onLayout={e => {console.log(e.nativeEvent.layout)}}>
-            // {child}
-            // </View>
-            // );
-            //
-            //}
-        });
-
-        return (
-            <View ref="view" style={[styles.container, this.props.style]}
-                onStartShouldSetResponder={returnTrue}
-                onMoveShouldSetResponder={returnTrue}
-                onStartShouldSetPanResponderCapture={returnTrue}
-                onMoveShouldSetPanResponderCapture={returnTrue}
-                onStartShouldSetPanResponder={returnTrue}
-                onMoveShouldSetPanResponder={returnTrue}
-                onPanResponderTerminationRequest={returnTrue}
-                onResponderGrant={this.detectAndScrollToSection}
-                onResponderMove={this.detectAndScrollToSection}
-                onResponderRelease={this.resetSection}
-            >
-                {sections}
-            </View>
-        );
-    }
+    return (
+      <View ref="view" style={[styles.container, this.props.style]}
+        onStartShouldSetResponder={returnTrue}
+        onMoveShouldSetResponder={returnTrue}
+        onStartShouldSetPanResponderCapture={returnTrue}
+        onMoveShouldSetPanResponderCapture={returnTrue}
+        onStartShouldSetPanResponder={returnTrue}
+        onMoveShouldSetPanResponder={returnTrue}
+        onPanResponderTerminationRequest={returnTrue}
+        onResponderGrant={this.detectAndScrollToSection}
+        onResponderMove={this.detectAndScrollToSection}
+        onResponderRelease={this.resetSection}
+      >
+        {sections}
+      </View>
+    );
+  }
 }
 
 SectionList.propTypes = {
 
-    /**
-    * A component to render for each section item
-    */
-    component: PropTypes.func,
+  /**
+   * A component to render for each section item
+   */
+  component: PropTypes.func,
 
-    /**
-    * Function to provide a title the section list items.
-    */
-    getSectionListTitle: PropTypes.func,
+  /**
+   * Function to provide a title the section list items.
+   */
+  getSectionListTitle: PropTypes.func,
 
-    /**
-    * Function to be called upon selecting a section list item
-    */
-    onSectionSelect: PropTypes.func,
+  /**
+   * Function to be called upon selecting a section list item
+   */
+  onSectionSelect: PropTypes.func,
 
-    /**
-    * The sections to render
-    */
-    sections: PropTypes.array.isRequired,
+  /**
+   * The sections to render
+   */
+  sections: PropTypes.array.isRequired,
 
-    /**
-    * A style to apply to the section list container
-    */
-    style: PropTypes.oneOfType([
-        PropTypes.number,
-        PropTypes.object,
-    ]),
+  /**
+   * A style to apply to the section list container
+   */
+  style: PropTypes.oneOfType([
+    PropTypes.number,
+    PropTypes.object,
+  ]),
 
-    /**
-    * Text font size
-    */
-    fontStyle: PropTypes.oneOfType([
-        PropTypes.number,
-        PropTypes.object,
-    ]),
+  /**
+   * Text font size
+   */
+  fontStyle: PropTypes.oneOfType([
+    PropTypes.number,
+    PropTypes.object,
+  ]),
 };
 
 const styles = StyleSheet.create({
-    container: {
-        position: 'absolute',
-        backgroundColor: 'transparent',
-        alignItems: 'flex-end',
-        justifyContent: 'flex-start',
-        right: 0,
-        top: 24,
-        bottom: 0
-    },
+  container: {
+    position: 'absolute',
+    backgroundColor: 'transparent',
+    alignItems: 'flex-end',
+    justifyContent: 'flex-start',
+    right: 0,
+    top: 24,
+    bottom: 0
+  },
 
-    item: {
-        paddingRight: 4,
-        alignItems: 'center',
-        width: 15,
-    },
+  item: {
+    paddingRight: 4,
+    alignItems: 'center',
+    width: 15,
+  },
 
-    text: {
-        fontSize: 10.4,
-        fontWeight: '700',
-        color: '#008fff'
-    },
+  text: {
+    fontSize: 10.4,
+    fontWeight: '700',
+    color: '#008fff'
+  },
 
-    inactivetext: {
-        fontWeight: '700',
-        color: '#CCCCCC'
-    }
+  inactivetext: {
+    fontWeight: '700',
+    color: '#CCCCCC'
+  }
 });
